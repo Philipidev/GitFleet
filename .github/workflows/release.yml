@@ -2,7 +2,7 @@ name: release
 
 on:
   push:
-    tags: ['v*']
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -11,12 +11,11 @@ permissions:
 jobs:
   release:
     runs-on: ubuntu-latest
-    # Job level on purpose: the `secrets` context is not available in a step's
-    # `if`, so the token is surfaced as `env` here and tested below.
-    env:
-      VSCE_PAT: ${{ secrets.VSCE_PAT }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          # HEAD^ is needed to tell whether this push changed the version.
+          fetch-depth: 2
 
       - uses: actions/setup-node@v4
         with:
@@ -25,15 +24,41 @@ jobs:
       - name: Package
         run: npx --yes @vscode/vsce package --no-dependencies --out git-fleet.vsix
 
-      - name: Attach the VSIX to the release
-        if: startsWith(github.ref, 'refs/tags/')
-        uses: softprops/action-gh-release@v2
+      - uses: actions/upload-artifact@v4
         with:
-          files: git-fleet.vsix
+          name: git-fleet-vsix
+          path: git-fleet.vsix
 
-      # Only runs once VSCE_PAT is set in the repository secrets. Publishing to
-      # the Marketplace is what makes Settings Sync carry the extension to
-      # another machine; without it the VSIX above is a manual install.
-      - name: Publish to the Marketplace
-        if: startsWith(github.ref, 'refs/tags/') && env.VSCE_PAT != ''
-        run: npx --yes @vscode/vsce publish --packagePath git-fleet.vsix
+      # A release is cut only when the version actually moved, so ordinary
+      # commits to main stay green and produce just the build artifact.
+      - name: Did the version change?
+        id: check
+        run: |
+          NEW=$(node -p "require('./package.json').version")
+          OLD=$(git show HEAD^:package.json 2>/dev/null \
+            | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{try{console.log(JSON.parse(s).version)}catch{console.log('')}})")
+
+          echo "version=$NEW" >> "$GITHUB_OUTPUT"
+          echo "old=${OLD:-<none>} new=$NEW"
+
+          if [ "$NEW" = "$OLD" ]; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Version is still $NEW, so no release was cut. Bump it with scripts/bump.ps1."
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Tag and release
+        if: steps.check.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.check.outputs.version }}
+        run: |
+          if gh release view "v$VERSION" >/dev/null 2>&1; then
+            echo "Release v$VERSION already exists, skipping."
+            exit 0
+          fi
+          mv git-fleet.vsix "git-fleet-$VERSION.vsix"
+          gh release create "v$VERSION" "git-fleet-$VERSION.vsix" \
+            --title "v$VERSION" \
+            --notes "Install with: code --install-extension git-fleet-$VERSION.vsix"

@@ -64,74 +64,79 @@ Everything is also available in the Command Palette under **Git Fleet**.
 
 ## Install
 
-### Develop from source (this machine only)
+Git Fleet is not on the Marketplace. It installs from this repository, in one command:
 
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts\dev-link.ps1
+```bash
+git clone https://github.com/Philipidev/GitFleet.git
+cd GitFleet
+node scripts/install.js
 ```
 
-Then **Developer: Reload Window**. Junction install, no admin rights, no build step — the extension
-is plain JavaScript against the VS Code API.
+That packages the extension into a `.vsix` and installs it with `code --install-extension`, so the
+result is a normal VS Code install that no longer depends on where the clone lives. Then run
+**Developer: Reload Window**.
 
-### Package and install into every local profile
+Uninstall with:
+
+```bash
+code --uninstall-extension philipidev.git-fleet
+```
+
+To update later: `git pull`, then `node scripts/install.js` again.
+
+Requirements: Node.js, the `code` CLI on PATH (VS Code command **Shell Command: Install 'code'
+command in PATH**), and network access the first time, for `npx @vscode/vsce`.
+
+Prebuilt `.vsix` files are attached to each [GitHub release](https://github.com/Philipidev/GitFleet/releases)
+if you would rather skip the build:
+
+```bash
+code --install-extension git-fleet-<version>.vsix
+```
+
+### Windows: every profile at once
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts\install-local.ps1
 ```
 
-Builds a `.vsix` and installs it into the Default profile plus every profile that does not already
-share the Default profile's extensions.
+Same build, but it installs into the Default profile plus every profile that does not already share
+the Default profile's extensions.
 
-## Syncing across profiles and machines
+### Working on the extension itself
 
-This is the part where VS Code has real limits, so it is worth being precise:
-
-| Install method | Available in other profiles | Carried by Settings Sync to another machine |
-| --- | --- | --- |
-| Folder / junction in `~/.vscode/extensions` | yes, it is machine-scanned | **no** |
-| `.vsix` (`code --install-extension`) | only the profiles you install it into | **no** |
-| Marketplace | yes, one click per profile | **yes** |
-
-Settings Sync replicates *extension identifiers* and re-installs them from the Marketplace on the
-other machine. It has no way to fetch a `.vsix` or a source folder, so pushing this repository to
-GitHub does not by itself make the extension sync — GitHub is where the source lives, the
-Marketplace is what makes sync work.
-
-A profile that was created with "Extensions" left as a default-profile flag shares the Default
-profile's extension set, so it needs no separate install at all.
-
-### Publishing to the Marketplace
-
-`package.json` is already set to publisher id **`philipidev`**, so the extension id will be
-`philipidev.git-fleet`. One-time setup:
-
-1. Sign in to <https://marketplace.visualstudio.com/manage> with a Microsoft account. It creates an
-   Azure DevOps organisation on first use.
-2. Create a publisher whose **id is exactly `philipidev`** (the display name can be anything). A
-   mismatch here is the most common `vsce publish` failure.
-3. In Azure DevOps, create a Personal Access Token: organisation **All accessible organizations**,
-   scope **Marketplace → Manage**, no expiry shorter than you want to babysit.
-
-Then publish, either from the machine:
-
-```bash
-npx @vscode/vsce login philipidev
-npx @vscode/vsce publish
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\dev-link.ps1
 ```
 
-…or from CI, which is what `.github/workflows/release.yml` does. Store the token once:
+This junctions the clone into `~/.vscode/extensions`, so the extension loads straight from source and
+a window reload is the whole edit cycle — no packaging step. Add `-Remove` to undo. The junction and
+a normal install share the same extension id and must not coexist: uninstall one before setting up
+the other.
 
-```bash
-gh secret set VSCE_PAT --repo Philipidev/GitFleet
-git tag v0.1.0 && git push origin v0.1.0
+## Syncing across machines
+
+There is none, and that is a VS Code limitation rather than a choice here. Settings Sync replicates
+*extension identifiers* and reinstalls them from the Marketplace; it has no way to fetch a `.vsix` or
+a source folder. A folder-scanned or `.vsix`-installed extension therefore stays on the machine that
+installed it.
+
+What does carry over is the repository: clone it on the other machine and run the same one-liner.
+Profiles on the same machine are easier — a profile created with "Extensions" left as a
+default-profile flag shares the Default profile's extension set and needs no separate install.
+
+## Releasing
+
+Push to `main` and the release workflow packages the extension, uploads the `.vsix` as a build
+artifact, and — when the version in `package.json` changed in that push — creates the `v<version>`
+tag and a GitHub release carrying the `.vsix`. Ordinary commits that leave the version alone just
+produce the artifact.
+
+Bumping, committing and pushing is one command:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\bump.ps1          # patch; also minor / major
 ```
-
-The workflow packages the `.vsix`, attaches it to the GitHub release, and publishes to the
-Marketplace when `VSCE_PAT` is present. Bump `version` in `package.json` before every tag — the
-Marketplace rejects a re-publish of an existing version.
-
-Marketplace listings are public and there is no unlisted mode. If the extension should stay
-private, stay on the `.vsix` route and accept the per-machine install.
 
 The icon is generated, not hand-drawn — edit `scripts/make-icon.ps1` and rerun it to change it.
 
