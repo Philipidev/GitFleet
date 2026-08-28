@@ -89,19 +89,38 @@ profile's extension set, so it needs no separate install at all.
 
 ### Publishing to the Marketplace
 
-1. Create an Azure DevOps organisation, then a Marketplace publisher at
-   <https://marketplace.visualstudio.com/manage>.
-2. Set `publisher` in `package.json` to that publisher id.
-3. Create a Personal Access Token with the **Marketplace: Manage** scope.
-4. Publish:
+`package.json` is already set to publisher id **`philipidev`**, so the extension id will be
+`philipidev.git-fleet`. One-time setup:
+
+1. Sign in to <https://marketplace.visualstudio.com/manage> with a Microsoft account. It creates an
+   Azure DevOps organisation on first use.
+2. Create a publisher whose **id is exactly `philipidev`** (the display name can be anything). A
+   mismatch here is the most common `vsce publish` failure.
+3. In Azure DevOps, create a Personal Access Token: organisation **All accessible organizations**,
+   scope **Marketplace → Manage**, no expiry shorter than you want to babysit.
+
+Then publish, either from the machine:
 
 ```bash
-npx @vscode/vsce login <publisher>
+npx @vscode/vsce login philipidev
 npx @vscode/vsce publish
 ```
 
-Marketplace listings are public — there is no unlisted mode. If the extension should stay private,
-stay on the `.vsix` route and accept the per-machine install.
+…or from CI, which is what `.github/workflows/release.yml` does. Store the token once:
+
+```bash
+gh secret set VSCE_PAT --repo Philipidev/GitFleet
+git tag v0.1.0 && git push origin v0.1.0
+```
+
+The workflow packages the `.vsix`, attaches it to the GitHub release, and publishes to the
+Marketplace when `VSCE_PAT` is present. Bump `version` in `package.json` before every tag — the
+Marketplace rejects a re-publish of an existing version.
+
+Marketplace listings are public and there is no unlisted mode. If the extension should stay
+private, stay on the `.vsix` route and accept the per-machine install.
+
+The icon is generated, not hand-drawn — edit `scripts/make-icon.ps1` and rerun it to change it.
 
 ## Requirements
 
