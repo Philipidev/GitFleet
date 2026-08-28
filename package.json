@@ -2,7 +2,7 @@
   "name": "git-fleet",
   "displayName": "Git Fleet",
   "description": "Fetch/pull across every repository in the Source Control view, plus per-repository terminal, fetch, pull and push buttons.",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "publisher": "philipidev",
   "license": "MIT",
   "icon": "icon.png",
@@ -52,13 +52,18 @@
         "command": "gitFleet.pull",
         "title": "Pull Repository",
         "category": "Git Fleet",
-        "icon": "$(arrow-down)"
+        "icon": "$(arrow-circle-down)"
       },
       {
         "command": "gitFleet.push",
         "title": "Push Repository",
         "category": "Git Fleet",
-        "icon": "$(arrow-up)"
+        "icon": "$(arrow-circle-up)"
+      },
+      {
+        "command": "gitFleet.separator",
+        "title": "Git Fleet",
+        "icon": { "light": "media/separator-light.svg", "dark": "media/separator-dark.svg" }
       },
       {
         "command": "gitFleet.refreshView",
@@ -74,15 +79,19 @@
       }
     ],
     "menus": {
+      "commandPalette": [
+        { "command": "gitFleet.separator", "when": "false" }
+      ],
       "scm/title": [
-        { "command": "gitFleet.fetchAll", "group": "navigation@100" },
-        { "command": "gitFleet.pullAll", "group": "navigation@101" }
+        { "command": "gitFleet.separator", "when": "scmProvider == git", "group": "navigation@50" },
+        { "command": "gitFleet.openTerminal", "when": "scmProvider == git", "group": "navigation@51" },
+        { "command": "gitFleet.fetch", "when": "scmProvider == git", "group": "navigation@52" },
+        { "command": "gitFleet.pull", "when": "scmProvider == git", "group": "navigation@53" },
+        { "command": "gitFleet.push", "when": "scmProvider == git", "group": "navigation@54" },
+        { "command": "gitFleet.fetchAll", "when": "!scmProvider", "group": "navigation@100" },
+        { "command": "gitFleet.pullAll", "when": "!scmProvider", "group": "navigation@101" }
       ],
       "scm/sourceControl": [
-        { "command": "gitFleet.openTerminal", "when": "scmProvider == git", "group": "inline@1" },
-        { "command": "gitFleet.fetch", "when": "scmProvider == git", "group": "inline@2" },
-        { "command": "gitFleet.pull", "when": "scmProvider == git", "group": "inline@3" },
-        { "command": "gitFleet.push", "when": "scmProvider == git", "group": "inline@4" },
         { "command": "gitFleet.openTerminal", "when": "scmProvider == git", "group": "gitFleet@1" },
         { "command": "gitFleet.fetch", "when": "scmProvider == git", "group": "gitFleet@2" },
         { "command": "gitFleet.pull", "when": "scmProvider == git", "group": "gitFleet@3" },

@@ -347,6 +347,11 @@ async function activate(context) {
 
   register('gitFleet.showLog', () => output.show(true));
 
+  // Purely visual: the divider drawn between the built-in Git buttons and this
+  // extension's buttons on each repository header. VS Code has no separator for
+  // a toolbar group, so it is a command with a vertical-line icon and no action.
+  register('gitFleet.separator', () => {});
+
   register('gitFleet.refreshView', async () => {
     await Promise.all(listRepos(api).map((r) => r.status().catch(() => {})));
     provider.resubscribe();

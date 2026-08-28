@@ -4,25 +4,38 @@ Bulk and per-repository Git actions for VS Code windows that hold many repositor
 
 ## What it adds
 
-**Source Control view title bar** (next to the `...` menu)
+**On every repository header** — each repository row of the Source Control view, and the view title
+bar itself when a single repository is open. A vertical divider marks where the built-in Git buttons
+end and these begin:
+
+| Icon | Action |
+| --- | --- |
+| `│` | Divider, does nothing |
+| `$(terminal)` | Open a terminal with `cwd` at that repository |
+| `$(cloud-download)` | Fetch that repository |
+| `$(arrow-circle-down)` | Pull that repository |
+| `$(arrow-circle-up)` | Push that repository |
+
+**Source Control view title bar, with more than one repository open**
 
 | Icon | Action |
 | --- | --- |
 | `$(cloud-download)` | Fetch every open repository |
 | `$(sync)` | Pull every open repository |
 
+These two are deliberately bound to `!scmProvider`, so they show up once in the view title instead
+of being repeated on every repository row. With a single repository open the per-repository buttons
+already cover the same ground, so they stay hidden.
+
 **A `Repositories` list inside the Source Control view** — one row per open repository, showing
-`branch  ↓behind  ↑ahead  ●localChanges`, with four buttons on hover:
+`branch  ↓behind  ↑ahead  ●localChanges`, carrying the same four per-repository buttons. It is the
+only place that surfaces the ahead/behind counters; hide it with
+`"gitFleet.showRepositoriesView": false` if the plain rows are enough.
 
-| Icon | Action |
-| --- | --- |
-| `$(terminal)` | Open a terminal with `cwd` at that repository |
-| `$(cloud-download)` | Fetch that repository |
-| `$(arrow-down)` | Pull that repository |
-| `$(arrow-up)` | Push that repository |
-
-The same four actions are also contributed to `scm/sourceControl`, so where the VS Code build
-supports it they appear directly on each repository header, and always in that header's `...` menu.
+Repository headers render the `scm/title` menu scoped to that repository — that is how the built-in
+`git.commit` and `git.refresh` buttons get there, and why per-repository actions belong in
+`scm/title` with `when: scmProvider == git` rather than in `scm/sourceControl`, whose toolbar is
+`navigation` and whose `inline` group is never drawn.
 
 Everything is also available in the Command Palette under **Git Fleet**.
 
