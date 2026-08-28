@@ -1,0 +1,160 @@
+{
+  "name": "git-fleet",
+  "displayName": "Git Fleet",
+  "description": "Fetch/pull across every repository in the Source Control view, plus per-repository terminal, fetch, pull and push buttons.",
+  "version": "0.1.0",
+  "publisher": "philipi",
+  "license": "MIT",
+  "engines": { "vscode": "^1.90.0" },
+  "categories": ["SCM Providers", "Other"],
+  "keywords": ["git", "multi-root", "monorepo", "fetch all", "pull all", "terminal"],
+  "repository": { "type": "git", "url": "https://github.com/CHANGEME/git-fleet.git" },
+  "bugs": { "url": "https://github.com/CHANGEME/git-fleet/issues" },
+  "extensionDependencies": ["vscode.git"],
+  "activationEvents": ["onStartupFinished"],
+  "main": "./extension.js",
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": false,
+      "description": "Git Fleet runs git operations and opens terminals in the workspace folders."
+    }
+  },
+  "contributes": {
+    "commands": [
+      {
+        "command": "gitFleet.fetchAll",
+        "title": "Fetch All Repositories",
+        "category": "Git Fleet",
+        "icon": "$(cloud-download)"
+      },
+      {
+        "command": "gitFleet.pullAll",
+        "title": "Pull All Repositories",
+        "category": "Git Fleet",
+        "icon": "$(sync)"
+      },
+      {
+        "command": "gitFleet.openTerminal",
+        "title": "Open Terminal at Repository",
+        "category": "Git Fleet",
+        "icon": "$(terminal)"
+      },
+      {
+        "command": "gitFleet.fetch",
+        "title": "Fetch Repository",
+        "category": "Git Fleet",
+        "icon": "$(cloud-download)"
+      },
+      {
+        "command": "gitFleet.pull",
+        "title": "Pull Repository",
+        "category": "Git Fleet",
+        "icon": "$(arrow-down)"
+      },
+      {
+        "command": "gitFleet.push",
+        "title": "Push Repository",
+        "category": "Git Fleet",
+        "icon": "$(arrow-up)"
+      },
+      {
+        "command": "gitFleet.refreshView",
+        "title": "Refresh Repository List",
+        "category": "Git Fleet",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "gitFleet.showLog",
+        "title": "Show Log",
+        "category": "Git Fleet",
+        "icon": "$(output)"
+      }
+    ],
+    "menus": {
+      "scm/title": [
+        { "command": "gitFleet.fetchAll", "group": "navigation@100" },
+        { "command": "gitFleet.pullAll", "group": "navigation@101" }
+      ],
+      "scm/sourceControl": [
+        { "command": "gitFleet.openTerminal", "when": "scmProvider == git", "group": "inline@1" },
+        { "command": "gitFleet.fetch", "when": "scmProvider == git", "group": "inline@2" },
+        { "command": "gitFleet.pull", "when": "scmProvider == git", "group": "inline@3" },
+        { "command": "gitFleet.push", "when": "scmProvider == git", "group": "inline@4" },
+        { "command": "gitFleet.openTerminal", "when": "scmProvider == git", "group": "gitFleet@1" },
+        { "command": "gitFleet.fetch", "when": "scmProvider == git", "group": "gitFleet@2" },
+        { "command": "gitFleet.pull", "when": "scmProvider == git", "group": "gitFleet@3" },
+        { "command": "gitFleet.push", "when": "scmProvider == git", "group": "gitFleet@4" }
+      ],
+      "view/title": [
+        { "command": "gitFleet.fetchAll", "when": "view == gitFleetRepos", "group": "navigation@1" },
+        { "command": "gitFleet.pullAll", "when": "view == gitFleetRepos", "group": "navigation@2" },
+        { "command": "gitFleet.refreshView", "when": "view == gitFleetRepos", "group": "navigation@3" },
+        { "command": "gitFleet.showLog", "when": "view == gitFleetRepos", "group": "1_log@1" }
+      ],
+      "view/item/context": [
+        { "command": "gitFleet.openTerminal", "when": "view == gitFleetRepos && viewItem == gitFleetRepo", "group": "inline@1" },
+        { "command": "gitFleet.fetch", "when": "view == gitFleetRepos && viewItem == gitFleetRepo", "group": "inline@2" },
+        { "command": "gitFleet.pull", "when": "view == gitFleetRepos && viewItem == gitFleetRepo", "group": "inline@3" },
+        { "command": "gitFleet.push", "when": "view == gitFleetRepos && viewItem == gitFleetRepo", "group": "inline@4" },
+        { "command": "gitFleet.openTerminal", "when": "view == gitFleetRepos && viewItem == gitFleetRepo", "group": "1_actions@1" },
+        { "command": "gitFleet.fetch", "when": "view == gitFleetRepos && viewItem == gitFleetRepo", "group": "1_actions@2" },
+        { "command": "gitFleet.pull", "when": "view == gitFleetRepos && viewItem == gitFleetRepo", "group": "1_actions@3" },
+        { "command": "gitFleet.push", "when": "view == gitFleetRepos && viewItem == gitFleetRepo", "group": "1_actions@4" }
+      ]
+    },
+    "views": {
+      "scm": [
+        {
+          "id": "gitFleetRepos",
+          "name": "Repositories",
+          "icon": "$(repo)",
+          "when": "config.gitFleet.showRepositoriesView"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Git Fleet",
+      "properties": {
+        "gitFleet.showRepositoriesView": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show the 'Repositories' list inside the Source Control view, with per-repository action buttons.",
+          "scope": "application"
+        },
+        "gitFleet.concurrency": {
+          "type": "number",
+          "default": 6,
+          "minimum": 1,
+          "maximum": 32,
+          "description": "How many repositories to process in parallel during bulk fetch/pull.",
+          "scope": "application"
+        },
+        "gitFleet.pullAll.confirm": {
+          "type": "boolean",
+          "default": true,
+          "description": "Ask for confirmation before pulling every repository.",
+          "scope": "application"
+        },
+        "gitFleet.pullAll.skipDirty": {
+          "type": "boolean",
+          "default": true,
+          "description": "During bulk pull, skip repositories that have uncommitted local changes.",
+          "scope": "application"
+        },
+        "gitFleet.ignoreRepositories": {
+          "type": "array",
+          "items": { "type": "string" },
+          "default": [],
+          "description": "Folder names to exclude from the list and from bulk actions.",
+          "scope": "resource"
+        },
+        "gitFleet.terminal.reuse": {
+          "type": "boolean",
+          "default": true,
+          "description": "Reuse an already open terminal for the same repository instead of creating a new one.",
+          "scope": "application"
+        }
+      }
+    }
+  }
+}
