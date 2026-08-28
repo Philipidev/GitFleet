@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.1
+
+- Failures now log everything git said, stdout included, instead of the first three lines of stderr.
+  A rejecting pre-push hook prints its reason on stdout and leaves stderr with a bare
+  `failed to push some refs`, so the old truncation hid exactly the part that explains the failure.
+- The error notification offers **Open Terminal**, which lands in the repository that failed.
+
 ## 0.2.0
 
 - Per-repository buttons now actually render. They moved from `scm/sourceControl` group `inline`,

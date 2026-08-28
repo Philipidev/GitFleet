@@ -2,7 +2,7 @@
   "name": "git-fleet",
   "displayName": "Git Fleet",
   "description": "Fetch/pull across every repository in the Source Control view, plus per-repository terminal, fetch, pull and push buttons.",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "publisher": "philipidev",
   "license": "MIT",
   "icon": "icon.png",

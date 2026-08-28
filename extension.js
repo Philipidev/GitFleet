@@ -18,10 +18,33 @@ function log(line) {
   output.appendLine(`[${new Date().toTimeString().slice(0, 8)}] ${line}`);
 }
 
+/** one line, for a notification */
 function errorMessage(e) {
   if (!e) return 'unknown error';
   const raw = e.stderr || e.stdout || e.message || String(e);
   return String(raw).split('\n').map((l) => l.trim()).filter(Boolean).slice(0, 3).join(' | ');
+}
+
+/**
+ * Everything git said, for the output channel. A failing pre-push hook prints
+ * its reason on stdout and leaves stderr with a bare "failed to push some refs",
+ * so dropping stdout — or truncating either — hides the actual cause.
+ */
+function errorDetail(e) {
+  if (!e) return '';
+  const parts = [];
+  if (e.stderr) parts.push(String(e.stderr));
+  if (e.stdout) parts.push(String(e.stdout));
+  if (!parts.length) parts.push(String(e.message || e));
+  if (e.gitErrorCode) parts.push(`gitErrorCode: ${e.gitErrorCode}`);
+  if (typeof e.exitCode === 'number') parts.push(`exit code: ${e.exitCode}`);
+  return parts.join('\n').replace(/\s+$/, '');
+}
+
+/** indents git's own output so it reads as a block under its log line */
+function logDetail(detail) {
+  if (!detail) return;
+  for (const line of detail.split('\n')) output.appendLine(`    ${line.replace(/\s+$/, '')}`);
 }
 
 async function getApi() {
@@ -151,9 +174,15 @@ async function runOne(title, repo, worker) {
         return result;
       } catch (e) {
         const m = errorMessage(e);
-        log(`${title} ${nameOf(repo)}: FAILED ${m}`);
-        const action = await vscode.window.showErrorMessage(`${title} failed in ${nameOf(repo)}: ${m}`, 'Show Log');
+        log(`${title} ${nameOf(repo)}: FAILED`);
+        logDetail(errorDetail(e));
+        const action = await vscode.window.showErrorMessage(
+          `${title} failed in ${nameOf(repo)}: ${m}`,
+          'Show Log',
+          'Open Terminal'
+        );
         if (action === 'Show Log') output.show(true);
+        if (action === 'Open Terminal') openTerminal(repo);
       }
     }
   );
@@ -188,7 +217,7 @@ async function runAll(title, worker) {
           try {
             results.push({ repo, status: (await worker(repo)) || 'ok' });
           } catch (e) {
-            results.push({ repo, status: 'FAILED', error: errorMessage(e) });
+            results.push({ repo, status: 'FAILED', error: errorMessage(e), detail: errorDetail(e) });
           }
           done++;
           progress.report({ increment: step, message: `${done}/${repos.length} – ${nameOf(repo)}` });
@@ -208,8 +237,9 @@ function report(title, results, cancelled) {
   results
     .sort((a, b) => nameOf(a.repo).localeCompare(nameOf(b.repo)))
     .forEach((r) => {
-      const detail = r.error ? `${r.status} – ${r.error}` : r.status;
-      log(`  ${nameOf(r.repo).padEnd(width)}  ${headLabel(r.repo).padEnd(26)}  ${detail}`);
+      const summary = r.error ? `${r.status} – ${r.error}` : r.status;
+      log(`  ${nameOf(r.repo).padEnd(width)}  ${headLabel(r.repo).padEnd(26)}  ${summary}`);
+      logDetail(r.detail);
     });
 
   const failed = results.filter((r) => r.status === 'FAILED');
